@@ -60,6 +60,18 @@ PORT = 5432
 NAME =
 CONNECT_STRING=postgresql://$(HOST_NAME):$(PORT)/$(NAME)?sslmode=disable
 
+# have to copy over crypto related headers https://github.com/ethereum/go-ethereum/issues/2738
+.PHONY: fixlibcrypto
+fixlibcrypto:
+	mkdir tmp-go-ethereum
+	git clone https://github.com/ethereum/go-ethereum.git tmp-go-ethereum
+	cp -r "tmp-go-ethereum/crypto/secp256k1/libsecp256k1" "vendor/github.com/ethereum/go-ethereum/crypto/secp256k1/"
+
+# load vulcanize schema before using hanlder
+loadschema:
+	curl https://raw.githubusercontent.com/vulcanize/vulcanizedb/master/db/schema.sql > vulcanize_schema.sql
+	sudo -u postgres psql vulcanize_private < vulcanize_schema.sql
+
 .PHONY: checkdbvars
 checkdbvars:
 	test -n "$(HOST_NAME)" # $$HOST_NAME 
@@ -83,12 +95,3 @@ import:
 	test -n "$(NAME)" # $$NAME
 	psql $(NAME) < db/schema.sql
 
-#Ethereum
-createprivate:
-	echo "deleting test_data_dir"
-	rm -rf test_data_dir
-	echo "adding test_data_dir"
-	mkdir test_data_dir
-
-startprivate: createprivate
-	geth --dev --dev.period=1 --datadir=test_data_dir --nodiscover

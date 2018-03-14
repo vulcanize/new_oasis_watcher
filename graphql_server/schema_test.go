@@ -57,7 +57,6 @@ var _ = Describe("GraphQL", func() {
 		db.Query(`DELETE FROM oasis.log_takes`)
 		graphQLRepositories = graphql_server.GraphQLRepositories{
 			log_take.OasisLogRepository{db},
-			repositories.LogRepository{db},
 		}
 		logTake := log_take.LogTakeEntity{
 			Id:         id,
@@ -70,10 +69,13 @@ var _ = Describe("GraphQL", func() {
 			GiveAmount: giveAmount,
 			Timestamp:  timestamp,
 		}
-		err = graphQLRepositories.LogRepository.CreateLogs([]core.Log{{}})
+		lr := repositories.LogRepository{
+			DB: db,
+		}
+		err = lr.CreateLogs([]core.Log{{}})
 		Expect(err).ToNot(HaveOccurred())
 		var ethLogID int64
-		err = graphQLRepositories.LogRepository.Get(&ethLogID, `Select id from logs`)
+		err = lr.Get(&ethLogID, `Select id from logs`)
 		Expect(err).NotTo(HaveOccurred())
 		err = graphQLRepositories.CreateLogTake(logTake, ethLogID)
 		Expect(err).NotTo(HaveOccurred())
@@ -116,8 +118,8 @@ var _ = Describe("GraphQL", func() {
 								"haveToken": "%v",
 								"wantToken": "%v",
 								"taker": "%v",
-								"takeAmount": %d,
-								"giveAmount": %d,
+								"takeAmount": "%d",
+								"giveAmount": "%d",
 								"timestamp": %d
 	                           }
 	                       ]
