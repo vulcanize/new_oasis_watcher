@@ -35,6 +35,6 @@ func watchLogs() {
 		DB:         *db,
 		Blockchain: blockchain,
 	}
-	watcher.AddHandlers(oasis_dex.HandlerInitializers())
+	watcher.AddTransformers(oasis_dex.TransformerInitializers())
 	watcher.Execute()
 }

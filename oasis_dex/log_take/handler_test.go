@@ -90,21 +90,21 @@ var fakeWatchedEvents = []*core.WatchedEvent{
 	},
 }
 
-var _ = Describe("LogTakeEntity Handler", func() {
+var _ = Describe("LogTakeEntity Transformer", func() {
 	It("persists a record for each log take watched event", func() {
 		logTakeConverter := MockLogTakeConverter{}
 		watchedEventsRepo := MockWatchedEventsRepository{}
 		watchedEventsRepo.SetWatchedEvents(fakeWatchedEvents)
 		oasisLogRepo := MockOasisLogRepository{}
 		filterRepo := MockFilterRepository{}
-		handler := log_take.Handler{
+		transformer := log_take.Transformer{
 			&logTakeConverter,
 			&watchedEventsRepo,
 			filterRepo,
 			&oasisLogRepo,
 		}
 
-		handler.Execute()
+		transformer.Execute()
 
 		Expect(len(oasisLogRepo.logTakes)).To(Equal(2))
 		Expect(oasisLogRepo.ethLogIDs).To(ConsistOf(logID1, logID2))

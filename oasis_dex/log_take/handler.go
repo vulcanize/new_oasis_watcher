@@ -11,7 +11,7 @@ import (
 	"github.com/vulcanize/vulcanizedb/pkg/filters"
 )
 
-type Handler struct {
+type Transformer struct {
 	Converter              ILogTakeConverter
 	WatchedEventRepository datastore.WatchedEventRepository
 	FilterRepository       datastore.FilterRepository
@@ -51,28 +51,28 @@ var logTakeFilters = []filters.LogFilter{
 	},
 }
 
-func NewLogTakeHandler(db *postgres.DB, blockchain core.Blockchain) shared.Handler {
-	var handler shared.Handler
+func NewLogTakeTransformer(db *postgres.DB, blockchain core.Blockchain) shared.Transformer {
+	var transformer shared.Transformer
 	cnvtr := LogTakeConverter{}
 	wer := repositories.WatchedEventRepository{DB: db}
 	fr := repositories.FilterRepository{DB: db}
 	olr := OasisLogRepository{db}
-	handler = &Handler{cnvtr, wer, fr, olr}
+	transformer = &Transformer{cnvtr, wer, fr, olr}
 	for _, filter := range logTakeFilters {
 		fr.CreateFilter(filter)
 	}
-	return handler
+	return transformer
 }
 
-func (logTakeHandler *Handler) Execute() error {
+func (logTakeTransformer *Transformer) Execute() error {
 	for _, filter := range logTakeFilters {
-		watchedEvents, err := logTakeHandler.WatchedEventRepository.GetWatchedEvents(filter.Name)
+		watchedEvents, err := logTakeTransformer.WatchedEventRepository.GetWatchedEvents(filter.Name)
 		if err != nil {
 			log.Println("Error fetching events for filter: ", err)
 			return err
 		}
 		for _, watchedEvent := range watchedEvents {
-			err = createLogTakeData(watchedEvent, logTakeHandler)
+			err = createLogTakeData(watchedEvent, logTakeTransformer)
 			if err != nil {
 				log.Println("Error persisting data for event: ", err)
 			}
@@ -81,13 +81,13 @@ func (logTakeHandler *Handler) Execute() error {
 	return nil
 }
 
-func createLogTakeData(watchedEvent *core.WatchedEvent, logTakeHandler *Handler) error {
-	logEvent, err := logTakeHandler.Converter.Convert(*watchedEvent)
+func createLogTakeData(watchedEvent *core.WatchedEvent, logTakeTransformer *Transformer) error {
+	logEvent, err := logTakeTransformer.Converter.Convert(*watchedEvent)
 	if err != nil {
 		log.Println("Error converting watched event to log: ", err)
 		return err
 	}
-	err = logTakeHandler.OasisLogRepository.CreateLogTake(*logEvent, watchedEvent.LogID)
+	err = logTakeTransformer.OasisLogRepository.CreateLogTake(*logEvent, watchedEvent.LogID)
 	if err != nil {
 		log.Println("Error persisting data for event: ", err)
 		return err

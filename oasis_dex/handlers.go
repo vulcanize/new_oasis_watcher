@@ -5,8 +5,8 @@ import (
 	"github.com/vulcanize/vulcanizedb/libraries/shared"
 )
 
-func HandlerInitializers() []shared.HandlerInitializer {
-	return []shared.HandlerInitializer{
-		log_take.NewLogTakeHandler,
+func TransformerInitializers() []shared.TransformerInitializer {
+	return []shared.TransformerInitializer{
+		log_take.NewLogTakeTransformer,
 	}
 }

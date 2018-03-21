@@ -60,6 +60,13 @@ PORT = 5432
 NAME =
 CONNECT_STRING=postgresql://$(HOST_NAME):$(PORT)/$(NAME)?sslmode=disable
 
+# import vulcanize schema
+.PHONY: setup
+setup: checkdbvars
+	curl https://raw.githubusercontent.com/vulcanize/vulcanizedb/master/db/schema.sql > vulcanize_schema.sql
+	createdb $(NAME)
+	psql $(NAME) < vulcanize_schema.sql
+
 # have to copy over crypto related headers https://github.com/ethereum/go-ethereum/issues/2738
 .PHONY: fixlibcrypto
 fixlibcrypto:
