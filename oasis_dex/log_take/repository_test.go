@@ -27,8 +27,6 @@ var _ = Describe("Logs Repository", func() {
 			Port:     5432,
 		}, core.Node{})
 		Expect(err).NotTo(HaveOccurred())
-		db.Query(`DELETE FROM maker.cups`)
-		db.Query(`DELETE FROM maker.peps`)
 		db.Query(`DELETE FROM logs`)
 		db.Query(`DELETE FROM log_filters`)
 		logRepository = repositories.LogRepository{DB: db}
@@ -36,12 +34,8 @@ var _ = Describe("Logs Repository", func() {
 		oasisLogRepository = log_take.OasisLogRepository{DB: db}
 	})
 
-	It("has a test", func() {
-		Expect(1).To(Equal(1))
-	})
-
-	Describe("Creating a new cups record", func() {
-		It("inserts a new cup", func() {
+	Describe("Creating a new log take record", func() {
+		It("inserts a new log take event", func() {
 			err := logRepository.CreateLogs([]core.Log{{}})
 			Expect(err).ToNot(HaveOccurred())
 			var ethLogID int64
@@ -102,7 +96,7 @@ var _ = Describe("Logs Repository", func() {
 			Expect(DBtimestamp).To(Equal(int64(timestamp)))
 		})
 
-		It("removes a cup when corresponding log is removed", func() {
+		It("removes a log take event when corresponding log is removed", func() {
 			err := logRepository.CreateLogs([]core.Log{{}})
 			Expect(err).ToNot(HaveOccurred())
 			var ethLogID int64
