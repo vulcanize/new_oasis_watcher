@@ -17,6 +17,7 @@ import (
 
 var _ = Describe("Log Take Converter", func() {
 
+	blocknumber := int64(4000870)
 	var event = types.Log{
 		Address: common.HexToAddress("0x83ce340889c15a3b4d38cfcd1fc93e5d8497691f"),
 		Topics: []common.Hash{common.HexToHash("0x3383e3357c77fd2e3a4b30deea81179bc70a795d053d14d5b7f2f01d0fd4596f"),
@@ -59,7 +60,7 @@ var _ = Describe("Log Take Converter", func() {
 		watchedEvent := core.WatchedEvent{
 			LogID:       0,
 			Name:        "",
-			BlockNumber: 4000870,
+			BlockNumber: blocknumber,
 			Address:     "0x83ce340889c15a3b4d38cfcd1fc93e5d8497691f",
 			TxHash:      "0x98237ddc11a618f5546cd3098e57d9ba159418cb18851fb98130cb3114063807",
 			Index:       50,
@@ -85,6 +86,7 @@ var _ = Describe("Log Take Converter", func() {
 		ga := new(big.Int)
 		ga.SetString("27055257200000000002", 10)
 		Expect(result.GiveAmount).To(Equal(ga))
+		Expect(result.Block).To(Equal(blocknumber))
 		Expect(result.Timestamp).To(Equal(uint64(1499649315)))
 	})
 
@@ -119,6 +121,7 @@ var _ = Describe("Log Take Converter", func() {
 		ga := new(big.Int)
 		ga.SetString("32718534385400314729409", 10)
 		Expect(result.GiveAmount).To(Equal(ga))
+		Expect(result.Block).To(Equal(int64(4750060)))
 		Expect(result.Timestamp).To(Equal(uint64(1513537810)))
 	})
 
@@ -153,6 +156,7 @@ var _ = Describe("Log Take Converter", func() {
 		ga := new(big.Int)
 		ga.SetString("197770423213066325", 10)
 		Expect(result.GiveAmount).To(Equal(ga))
+		Expect(result.Block).To(Equal(int64(5211385)))
 		Expect(result.Timestamp).To(Equal(uint64(1520407969)))
 	})
 })

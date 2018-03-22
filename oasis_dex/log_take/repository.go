@@ -17,7 +17,7 @@ type OasisLogRepository struct {
 func (repository OasisLogRepository) GetLogTakesByMaker(maker string) ([]LogTakeModel, error) {
 	logTakes := []LogTakeModel{}
 
-	err := repository.Select(&logTakes, "SELECT oasis_log_id, pair, maker, have_token, want_token, taker, take_amount, give_amount, timestamp FROM oasis.log_takes WHERE maker = $1", maker)
+	err := repository.Select(&logTakes, "SELECT oasis_log_id, pair, maker, have_token, want_token, taker, take_amount, give_amount, block, timestamp FROM oasis.log_takes WHERE maker = $1", maker)
 	if err != nil {
 		return logTakes, err
 	}
@@ -36,10 +36,10 @@ func (repository OasisLogRepository) CreateLogTake(logTake LogTakeEntity, ethLog
 	giveAmount := logTake.GiveAmount.String()
 
 	_, err := repository.Exec(
-		`INSERT INTO oasis.log_takes (eth_log_id, oasis_log_id, pair, maker, have_token, want_token, taker, take_amount, give_amount, timestamp)
-                SELECT $1, $2, $3, $4, $5, $6, $7, $8::NUMERIC, $9::NUMERIC, $10
+		`INSERT INTO oasis.log_takes (eth_log_id, oasis_log_id, pair, maker, have_token, want_token, taker, take_amount, give_amount, block, timestamp)
+                SELECT $1, $2, $3, $4, $5, $6, $7, $8::NUMERIC, $9::NUMERIC, $10::NUMERIC, $11
                 WHERE NOT EXISTS (SELECT eth_log_id FROM oasis.log_takes WHERE eth_log_id = $1)`,
-		ethLogId, oasisLogId, pair, maker, haveToken, wantToken, taker, takeAmount, giveAmount, logTake.Timestamp)
+		ethLogId, oasisLogId, pair, maker, haveToken, wantToken, taker, takeAmount, giveAmount, logTake.Block, logTake.Timestamp)
 	if err != nil {
 		return err
 	}

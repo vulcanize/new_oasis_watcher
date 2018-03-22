@@ -61,11 +61,12 @@ func (MockFilterRepository) GetFilter(name string) (filters.LogFilter, error) {
 
 var logID1 = int64(123)
 var logID2 = int64(456)
+var blockNumber = int64(5211385)
 var fakeWatchedEvents = []*core.WatchedEvent{
 	&core.WatchedEvent{
 		LogID:       logID1,
 		Name:        "LogTake",
-		BlockNumber: 5211385,
+		BlockNumber: blockNumber,
 		Address:     common.StringToAddress("address").String(),
 		TxHash:      "",
 		Index:       0,
@@ -78,7 +79,7 @@ var fakeWatchedEvents = []*core.WatchedEvent{
 	&core.WatchedEvent{
 		LogID:       logID2,
 		Name:        "LogTake",
-		BlockNumber: 0,
+		BlockNumber: blockNumber,
 		Address:     common.StringToAddress("address").String(),
 		TxHash:      "",
 		Index:       0,
@@ -109,4 +110,5 @@ var _ = Describe("LogTakeEntity Transformer", func() {
 		Expect(len(oasisLogRepo.logTakes)).To(Equal(2))
 		Expect(oasisLogRepo.ethLogIDs).To(ConsistOf(logID1, logID2))
 	})
+
 })

@@ -27,6 +27,7 @@ var OasisGraphQLSchema = `
 		taker: String!
 		takeAmount: String!
 		giveAmount: String!
+		block: Int!
 		timestamp: Int!
 	}
 
@@ -108,6 +109,10 @@ func (cr transactionResolver) TakeAmount() string {
 
 func (cr transactionResolver) GiveAmount() string {
 	return cr.c.GiveAmount
+}
+
+func (cr transactionResolver) Block() int32 {
+	return int32(cr.c.Block)
 }
 
 func (cr transactionResolver) Timestamp() int32 {

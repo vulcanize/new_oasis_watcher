@@ -15,5 +15,6 @@ type LogTakeEntity struct {
 	Taker      common.Address
 	TakeAmount *big.Int
 	GiveAmount *big.Int
+	Block      int64
 	Timestamp  uint64
 }

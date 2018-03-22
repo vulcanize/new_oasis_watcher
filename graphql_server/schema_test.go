@@ -44,6 +44,7 @@ var _ = Describe("GraphQL", func() {
 	var taker = common.StringToAddress("Taker")
 	var takeAmount = big.NewInt(123)
 	var giveAmount = big.NewInt(456)
+	var block = int64(12345)
 	var timestamp = uint64(789)
 
 	BeforeEach(func() {
@@ -67,6 +68,7 @@ var _ = Describe("GraphQL", func() {
 			Taker:      taker,
 			TakeAmount: takeAmount,
 			GiveAmount: giveAmount,
+			Block:      block,
 			Timestamp:  timestamp,
 		}
 		lr := repositories.LogRepository{
@@ -99,6 +101,7 @@ var _ = Describe("GraphQL", func() {
 	                           taker
 	                           takeAmount
 	                           giveAmount
+							   block
 	                           timestamp
 	                         }
 	                       }
@@ -120,11 +123,12 @@ var _ = Describe("GraphQL", func() {
 								"taker": "%v",
 								"takeAmount": "%d",
 								"giveAmount": "%d",
+								"block": %d,
 								"timestamp": %d
 	                           }
 	                       ]
 	                     }
-	               }`, common.Bytes2Hex(id[:]), common.Bytes2Hex(pair[:]), maker.Hex(), haveToken.Hex(), wantToken.Hex(), taker.Hex(), takeAmount, giveAmount, timestamp)
+	               }`, common.Bytes2Hex(id[:]), common.Bytes2Hex(pair[:]), maker.Hex(), haveToken.Hex(), wantToken.Hex(), taker.Hex(), takeAmount, giveAmount, block, timestamp)
 		var v interface{}
 		if len(response.Errors) != 0 {
 			log.Fatal(response.Errors)

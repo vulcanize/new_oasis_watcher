@@ -56,6 +56,7 @@ var _ = Describe("Logs Repository", func() {
 			taker := common.StringToAddress("taker")
 			takeAmount := big.NewInt(123)
 			giveAmount := big.NewInt(456)
+			block := int64(12345)
 			timestamp := uint64(54321)
 			logTake := log_take.LogTakeEntity{
 				Id:         oasisLogId,
@@ -66,6 +67,7 @@ var _ = Describe("Logs Repository", func() {
 				Taker:      taker,
 				TakeAmount: takeAmount,
 				GiveAmount: giveAmount,
+				Block:      block,
 				Timestamp:  timestamp,
 			}
 
@@ -81,10 +83,11 @@ var _ = Describe("Logs Repository", func() {
 			var DBtaker string
 			var DBtakeAmount int64
 			var DBgiveAmount int64
+			var DBblock int64
 			var DBtimestamp int64
 			err = oasisLogRepository.DB.QueryRowx(
-				`SELECT eth_log_id, oasis_log_id, pair, maker, have_token, want_token, taker, take_amount, give_amount, timestamp FROM oasis.log_takes`).
-				Scan(&DBethLogID, &DBoasisLogID, &DBpair, &DBmaker, &DBhaveToken, &DBwantToken, &DBtaker, &DBtakeAmount, &DBgiveAmount, &DBtimestamp)
+				`SELECT eth_log_id, oasis_log_id, pair, maker, have_token, want_token, taker, take_amount, give_amount, block, timestamp FROM oasis.log_takes`).
+				Scan(&DBethLogID, &DBoasisLogID, &DBpair, &DBmaker, &DBhaveToken, &DBwantToken, &DBtaker, &DBtakeAmount, &DBgiveAmount, &DBblock, &DBtimestamp)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(DBethLogID).To(Equal(ethLogID))
 			Expect(common.Hex2Bytes(DBoasisLogID)).To(Equal(oasisLogId[:]))
@@ -95,7 +98,59 @@ var _ = Describe("Logs Repository", func() {
 			Expect(DBtaker).To(Equal(taker.Hex()))
 			Expect(DBtakeAmount).To(Equal(takeAmount.Int64()))
 			Expect(DBgiveAmount).To(Equal(giveAmount.Int64()))
+			Expect(DBblock).To(Equal(block))
 			Expect(DBtimestamp).To(Equal(int64(timestamp)))
 		})
+
+		It("removes a cup when corresponding log is removed", func() {
+			err := logRepository.CreateLogs([]core.Log{{}})
+			Expect(err).ToNot(HaveOccurred())
+			var ethLogID int64
+			err = logRepository.Get(&ethLogID, `Select id from logs`)
+			Expect(err).ToNot(HaveOccurred())
+
+			logTake := log_take.LogTakeEntity{
+				Id:         [32]byte{},
+				Pair:       [32]byte{},
+				Maker:      common.Address{},
+				HaveToken:  common.Address{},
+				WantToken:  common.Address{},
+				Taker:      common.Address{},
+				TakeAmount: big.NewInt(0),
+				GiveAmount: big.NewInt(0),
+				Timestamp:  0,
+			}
+
+			//confirm newly created log_take is present
+			err = oasisLogRepository.CreateLogTake(logTake, ethLogID)
+			Expect(err).ToNot(HaveOccurred())
+			type dbRow struct {
+				ID       int
+				EthLogId int64 `db:"eth_log_id"`
+				log_take.LogTakeModel
+			}
+			result := &dbRow{}
+			var logCount int
+			err = oasisLogRepository.DB.QueryRowx(
+				`SELECT * FROM oasis.log_takes WHERE eth_log_id = $1`, ethLogID).StructScan(result)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(result.EthLogId).To(Equal(ethLogID))
+
+			//log is removed b/c of reorg
+			_, err = logRepository.DB.Exec(`DELETE FROM logs WHERE id = $1`, ethLogID)
+			Expect(err).ToNot(HaveOccurred())
+			err = logRepository.Get(&logCount, `SELECT count(*) FROM logs WHERE id = $1`, ethLogID)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(logCount).To(BeZero())
+
+			//confirm corresponding logtake is removed
+			var logTakeCount int
+			err = oasisLogRepository.DB.QueryRowx(
+				`SELECT count(*) FROM oasis.log_takes WHERE eth_log_id = $1`, ethLogID).Scan(&logTakeCount)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(logTakeCount).To(BeZero())
+
+		})
+
 	})
 })

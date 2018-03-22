@@ -10,5 +10,6 @@ type LogTakeModel struct {
 	// should maybe convert these to big ints if there's a use case beyond GraphQL
 	TakeAmount string `db:"take_amount"`
 	GiveAmount string `db:"give_amount"`
+	Block      int64
 	Timestamp  int
 }

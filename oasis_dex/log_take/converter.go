@@ -28,6 +28,7 @@ func (LogTakeConverter) Convert(watchedEvent core.WatchedEvent) (*LogTakeEntity,
 	if err != nil {
 		return result, err
 	}
+	result.Block = watchedEvent.BlockNumber
 	return result, nil
 }
 
