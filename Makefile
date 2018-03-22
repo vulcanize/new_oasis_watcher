@@ -73,6 +73,7 @@ fixlibcrypto:
 	mkdir tmp-go-ethereum
 	git clone https://github.com/ethereum/go-ethereum.git tmp-go-ethereum
 	cp -r "tmp-go-ethereum/crypto/secp256k1/libsecp256k1" "vendor/github.com/ethereum/go-ethereum/crypto/secp256k1/"
+	rm -rf "tmp-go-ethereum"
 
 # load vulcanize schema before using hanlder
 loadschema:
