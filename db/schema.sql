@@ -84,35 +84,6 @@ ALTER SEQUENCE log_takes_id_seq OWNED BY log_takes.id;
 SET search_path = public, pg_catalog;
 
 --
--- Name: logs; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE logs (
-    id integer NOT NULL,
-    block_number bigint,
-    address character varying(66),
-    tx_hash character varying(66),
-    index bigint,
-    topic0 character varying(66),
-    topic1 character varying(66),
-    topic2 character varying(66),
-    topic3 character varying(66),
-    data text,
-    receipt_id integer
-);
-
-
---
--- Name: block_stats; Type: VIEW; Schema: public; Owner: -
---
-
-CREATE VIEW block_stats AS
- SELECT max(logs.block_number) AS max_block,
-    min(logs.block_number) AS min_block
-   FROM logs;
-
-
---
 -- Name: blocks; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -135,6 +106,62 @@ CREATE TABLE blocks (
     reward double precision,
     uncles_reward double precision
 );
+
+
+--
+-- Name: logs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE logs (
+    id integer NOT NULL,
+    block_number bigint,
+    address character varying(66),
+    tx_hash character varying(66),
+    index bigint,
+    topic0 character varying(66),
+    topic1 character varying(66),
+    topic2 character varying(66),
+    topic3 character varying(66),
+    data text,
+    receipt_id integer
+);
+
+
+SET search_path = oasis, pg_catalog;
+
+--
+-- Name: log_takes_with_status; Type: VIEW; Schema: oasis; Owner: -
+--
+
+CREATE VIEW log_takes_with_status AS
+ SELECT log_takes.eth_log_id,
+    log_takes.oasis_log_id,
+    log_takes.pair,
+    log_takes.maker,
+    log_takes.have_token,
+    log_takes.want_token,
+    log_takes.taker,
+    log_takes.take_amount,
+    log_takes.give_amount,
+    log_takes.block,
+    log_takes."timestamp",
+    l.tx_hash,
+    b.is_final
+   FROM ((log_takes
+     JOIN public.logs l ON ((log_takes.eth_log_id = l.id)))
+     JOIN public.blocks b ON ((log_takes.block = (b.number)::numeric)));
+
+
+SET search_path = public, pg_catalog;
+
+--
+-- Name: block_stats; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW block_stats AS
+ SELECT max(logs.block_number) AS max_block,
+    min(logs.block_number) AS min_block
+   FROM logs;
 
 
 --

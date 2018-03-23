@@ -18,4 +18,24 @@ CREATE TABLE oasis.log_takes (
   REFERENCES logs (id)
   ON DELETE CASCADE
 );
+
+CREATE VIEW oasis.log_takes_with_status AS
+  SELECT
+    eth_log_id,
+    oasis_log_id,
+    pair,
+    maker,
+    have_token,
+    want_token,
+    taker,
+    take_amount,
+    give_amount,
+    block,
+    timestamp,
+    tx_hash,
+    is_final
+  FROM oasis.log_takes
+    JOIN logs l ON log_takes.eth_log_id = l.id
+    JOIN blocks b ON log_takes.block = b.number;
+
 COMMIT;
