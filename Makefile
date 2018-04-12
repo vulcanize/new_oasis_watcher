@@ -50,7 +50,7 @@ test: | $(GINKGO) $(LINT)
 dep: | $(DEP)
 	$(DEP) ensure
 
-build: dep
+build: dep fixlibcrypto
 	go fmt ./...
 	go build
 

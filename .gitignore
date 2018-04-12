@@ -1,2 +1,3 @@
 .idea/*
 oasis_watcher
+environments/*.toml
