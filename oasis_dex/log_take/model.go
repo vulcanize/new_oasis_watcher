@@ -1,15 +1,19 @@
 package log_take
 
+import (
+	"time"
+)
+
 type LogTakeModel struct {
-	LogID     string `db:"oasis_log_id"`
-	Pair      string
-	Maker     string
-	HaveToken string `db:"have_token"`
-	WantToken string `db:"want_token"`
-	Taker     string
-	// should maybe convert these to big ints if there's a use case beyond GraphQL
-	TakeAmount string `db:"take_amount"`
-	GiveAmount string `db:"give_amount"`
-	Block      int64
-	Timestamp  int
+	ID        int64  `db:"id"` //id
+	Pair      string //pair
+	Guy       string //maker
+	Gem       string //pay_gem
+	Lot       string //give_amt
+	Gal       string //taker
+	Pie       string //buy_gem
+	Bid       string //take_amt
+	Block     int64
+	Tx        string
+	Timestamp time.Time `db:"time"`
 }

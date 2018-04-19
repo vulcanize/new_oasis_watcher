@@ -1,45 +1,24 @@
 package log_take
 
 import (
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/vulcanize/vulcanizedb/pkg/datastore/postgres"
 )
 
-type IOasisLogRepository interface {
-	CreateLogTake(logTake LogTakeEntity, ethLogId int64) error
-	GetLogTakesByMaker(maker string) ([]LogTakeModel, error)
+type Datastore interface {
+	Create(logTake LogTakeModel, vulcanizeLogId int64) error
 }
 
-type OasisLogRepository struct {
+type Repository struct {
 	*postgres.DB
 }
 
-func (repository OasisLogRepository) GetLogTakesByMaker(maker string) ([]LogTakeModel, error) {
-	logTakes := []LogTakeModel{}
-
-	err := repository.Select(&logTakes, "SELECT oasis_log_id, pair, maker, have_token, want_token, taker, take_amount, give_amount, block, timestamp FROM oasis.log_takes WHERE maker = $1", maker)
-	if err != nil {
-		return logTakes, err
-	}
-
-	return logTakes, nil
-}
-
-func (repository OasisLogRepository) CreateLogTake(logTake LogTakeEntity, ethLogId int64) error {
-	oasisLogId := common.Bytes2Hex(logTake.Id[:])
-	pair := common.Bytes2Hex(logTake.Pair[:])
-	maker := logTake.Maker.Hex()
-	haveToken := logTake.HaveToken.Hex()
-	wantToken := logTake.WantToken.Hex()
-	taker := logTake.Taker.Hex()
-	takeAmount := logTake.TakeAmount.String()
-	giveAmount := logTake.GiveAmount.String()
-
+func (repository Repository) Create(logTake LogTakeModel, vulcanizeLogId int64) error {
 	_, err := repository.Exec(
-		`INSERT INTO oasis.log_takes (eth_log_id, oasis_log_id, pair, maker, have_token, want_token, taker, take_amount, give_amount, block, timestamp)
-                SELECT $1, $2, $3, $4, $5, $6, $7, $8::NUMERIC, $9::NUMERIC, $10::NUMERIC, $11
-                WHERE NOT EXISTS (SELECT eth_log_id FROM oasis.log_takes WHERE eth_log_id = $1)`,
-		ethLogId, oasisLogId, pair, maker, haveToken, wantToken, taker, takeAmount, giveAmount, logTake.Block, logTake.Timestamp)
+		`INSERT INTO  oasis.trade (vulcanize_log_id, id, pair, guy, gem, lot, gal, pie, bid, block, tx, time) 
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+				ON CONFLICT (vulcanize_log_id) DO NOTHING`,
+		vulcanizeLogId, logTake.ID, logTake.Pair, logTake.Guy, logTake.Gem, logTake.Lot, logTake.Gal, logTake.Pie, logTake.Bid, logTake.Block, logTake.Tx, logTake.Timestamp,
+	)
 	if err != nil {
 		return err
 	}

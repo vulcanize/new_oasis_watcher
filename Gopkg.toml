@@ -27,11 +27,7 @@
 
 [[constraint]]
   name = "github.com/ethereum/go-ethereum"
-  version = "1.8.2"
-
-[[constraint]]
-  branch = "master"
-  name = "github.com/graph-gophers/graphql-go"
+  version = "1.8.4"
 
 [[constraint]]
   branch = "master"

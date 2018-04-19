@@ -3,6 +3,8 @@ package cmd
 import (
 	"log"
 
+	"time"
+
 	"github.com/8thlight/oasis_watcher/oasis_dex"
 	"github.com/spf13/cobra"
 	"github.com/vulcanize/vulcanizedb/libraries/shared"
@@ -26,6 +28,8 @@ func init() {
 }
 
 func watchLogs() {
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
 	blockchain := geth.NewBlockchain(ipc)
 	db, err := postgres.NewDB(databaseConfig, blockchain.Node())
 	if err != nil {
@@ -36,5 +40,7 @@ func watchLogs() {
 		Blockchain: blockchain,
 	}
 	watcher.AddTransformers(oasis_dex.TransformerInitializers())
-	watcher.Execute()
+	for range ticker.C {
+		watcher.Execute()
+	}
 }
