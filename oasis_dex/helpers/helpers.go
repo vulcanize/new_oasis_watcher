@@ -1,6 +1,8 @@
 package helpers
 
 import (
+	"math/big"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -23,4 +25,10 @@ func ConvertToLog(watchedEvent core.WatchedEvent) types.Log {
 
 func createTopics(topic0 string, topic1 string, topic2 string, topic3 string) []common.Hash {
 	return []common.Hash{common.HexToHash(topic0), common.HexToHash(topic1), common.HexToHash(topic2), common.HexToHash(topic3)}
+}
+
+func BigFromString(n string) *big.Int {
+	b := new(big.Int)
+	b.SetString(n, 10)
+	return b
 }

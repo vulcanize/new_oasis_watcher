@@ -4,11 +4,10 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"math/big"
-
 	"time"
 
 	"github.com/8thlight/oasis_watcher/oasis_dex/constants"
+	"github.com/8thlight/oasis_watcher/oasis_dex/helpers"
 	"github.com/8thlight/oasis_watcher/oasis_dex/log_take"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -18,6 +17,20 @@ import (
 )
 
 var _ = Describe("Log Take Converter", func() {
+
+	expectedModel := log_take.LogTakeModel{
+		ID:        2496,
+		Pair:      "0x3daf72416fd88e456b745a9b77264e6765d349bc9eda37a2b9347c7e12902733",
+		Guy:       "0x00ca405026e9018c29c26cb081dcc9653428bfe9",
+		Gem:       "0xc66ea802717bfb9833400264dd12c2bceaa34a6d",
+		Lot:       "27055257200000000002",
+		Gal:       "0x0092ad2b9ae189d50f9cd8e7f4c3355c2c93e3fc",
+		Pie:       "0xecf8f87f810ecf450940c9f60066b4a7a501d6a7",
+		Bid:       "34334082741116751270",
+		Block:     4000870,
+		Tx:        "0x73c95b64c079f301d6e915441a1730c5c5a146e0c9a877c6aa431eea3603c4f5",
+		Timestamp: time.Unix(1499649315, 0),
+	}
 
 	blocknumber := int64(4000870)
 	var event = types.Log{
@@ -42,19 +55,27 @@ var _ = Describe("Log Take Converter", func() {
 		err := contract.UnpackLog(result, "LogTake", event)
 		Expect(err).ToNot(HaveOccurred())
 
-		p := hexutil.Encode(result.Pair[:])
-		Expect(p).To(Equal("0x3daf72416fd88e456b745a9b77264e6765d349bc9eda37a2b9347c7e12902733"))
-		Expect(result.Maker.Hex()).To(Equal("0x00Ca405026e9018c29c26Cb081DcC9653428bFe9"))
-		Expect(result.Pay_gem.Hex()).To(Equal("0xC66eA802717bFb9833400264Dd12c2bCeAa34a6d"))
-		Expect(result.Buy_gem.Hex()).To(Equal("0xECF8F87f810EcF450940c9f60066b4a7a501d6A7"))
-		Expect(result.Taker.Hex()).To(Equal("0x0092Ad2b9ae189D50F9cd8E7F4c3355C2c93e3fc"))
-		ta := new(big.Int)
-		ta.SetString("34334082741116751270", 10)
-		Expect(result.Take_amt).To(Equal(ta))
-		ga := new(big.Int)
-		ga.SetString("27055257200000000002", 10)
-		Expect(result.Give_amt).To(Equal(ga))
-		Expect(result.Timestamp).To(Equal(uint64(1499649315)))
+		expectedEntity := log_take.LogTakeEntity{
+			Id:        [32]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 192},
+			Pair:      [32]byte{61, 175, 114, 65, 111, 216, 142, 69, 107, 116, 90, 155, 119, 38, 78, 103, 101, 211, 73, 188, 158, 218, 55, 162, 185, 52, 124, 126, 18, 144, 39, 51},
+			Maker:     common.HexToAddress("0x00Ca405026e9018c29c26Cb081DcC9653428bFe9"),
+			Pay_gem:   common.HexToAddress("0xC66eA802717bFb9833400264Dd12c2bCeAa34a6d"),
+			Buy_gem:   common.HexToAddress("0xECF8F87f810EcF450940c9f60066b4a7a501d6A7"),
+			Taker:     common.HexToAddress("0x0092Ad2b9ae189D50F9cd8E7F4c3355C2c93e3fc"),
+			Take_amt:  helpers.BigFromString("34334082741116751270"),
+			Give_amt:  helpers.BigFromString("27055257200000000002"),
+			Timestamp: uint64(1499649315),
+		}
+
+		Expect(result.Pair).To(Equal(expectedEntity.Pair))
+		Expect(result.Maker).To(Equal(expectedEntity.Maker))
+		Expect(result.Pay_gem).To(Equal(expectedEntity.Pay_gem))
+		Expect(result.Buy_gem).To(Equal(expectedEntity.Buy_gem))
+		Expect(result.Taker).To(Equal(expectedEntity.Taker))
+		Expect(result.Take_amt).To(Equal(expectedEntity.Take_amt))
+		Expect(result.Give_amt).To(Equal(expectedEntity.Give_amt))
+		Expect(result.Block).To(Equal(expectedEntity.Block))
+		Expect(result.Timestamp).To(Equal(expectedEntity.Timestamp))
 	})
 
 	It("converts watched event from address 0x83 into LogTakeEntity struct", func() {
@@ -75,21 +96,30 @@ var _ = Describe("Log Take Converter", func() {
 		result, err := log_take.LogTakeConverter{}.ToEntity(watchedEvent)
 		Expect(err).NotTo(HaveOccurred())
 
-		pair := hexutil.Encode(result.Pair[:])
-		Expect(pair).To(Equal("0x3daf72416fd88e456b745a9b77264e6765d349bc9eda37a2b9347c7e12902733"))
-		Expect(result.Maker.Hex()).To(Equal("0x00Ca405026e9018c29c26Cb081DcC9653428bFe9"))
-		Expect(result.Pay_gem.Hex()).To(Equal("0xC66eA802717bFb9833400264Dd12c2bCeAa34a6d"))
-		Expect(result.Buy_gem.Hex()).To(Equal("0xECF8F87f810EcF450940c9f60066b4a7a501d6A7"))
-		Expect(result.Taker.Hex()).To(Equal("0x0092Ad2b9ae189D50F9cd8E7F4c3355C2c93e3fc"))
-		takeAmt := new(big.Int)
-		takeAmt.SetString("34334082741116751270", 10)
-		Expect(result.Take_amt).To(Equal(takeAmt))
-		giveAmt := new(big.Int)
-		giveAmt.SetString("27055257200000000002", 10)
-		Expect(result.Give_amt).To(Equal(giveAmt))
-		Expect(result.Block).To(Equal(blocknumber))
+		expectedEntity := log_take.LogTakeEntity{
+			Id:        [32]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 192},
+			Pair:      [32]byte{61, 175, 114, 65, 111, 216, 142, 69, 107, 116, 90, 155, 119, 38, 78, 103, 101, 211, 73, 188, 158, 218, 55, 162, 185, 52, 124, 126, 18, 144, 39, 51},
+			Maker:     common.Address{0, 202, 64, 80, 38, 233, 1, 140, 41, 194, 108, 176, 129, 220, 201, 101, 52, 40, 191, 233},
+			Pay_gem:   common.Address{198, 110, 168, 2, 113, 123, 251, 152, 51, 64, 2, 100, 221, 18, 194, 188, 234, 163, 74, 109},
+			Buy_gem:   common.Address{236, 248, 248, 127, 129, 14, 207, 69, 9, 64, 201, 246, 0, 102, 180, 167, 165, 1, 214, 167},
+			Taker:     common.Address{0, 146, 173, 43, 154, 225, 137, 213, 15, 156, 216, 231, 244, 195, 53, 92, 44, 147, 227, 252},
+			Take_amt:  helpers.BigFromString("34334082741116751270 "),
+			Give_amt:  helpers.BigFromString("27055257200000000002"),
+			Block:     4000870,
+			Tx:        "0x98237ddc11a618f5546cd3098e57d9ba159418cb18851fb98130cb3114063807",
+			Timestamp: 1499649315,
+		}
+
+		Expect(result.Pair).To(Equal(expectedEntity.Pair))
+		Expect(result.Maker).To(Equal(expectedEntity.Maker))
+		Expect(result.Pay_gem).To(Equal(expectedEntity.Pay_gem))
+		Expect(result.Buy_gem).To(Equal(expectedEntity.Buy_gem))
+		Expect(result.Taker).To(Equal(expectedEntity.Taker))
+		Expect(result.Take_amt).To(Equal(expectedEntity.Take_amt))
+		Expect(result.Give_amt).To(Equal(expectedEntity.Give_amt))
+		Expect(result.Block).To(Equal(expectedEntity.Block))
 		Expect(result.Tx).To(Equal(watchedEvent.TxHash))
-		Expect(result.Timestamp).To(Equal(uint64(1499649315)))
+		Expect(result.Timestamp).To(Equal(expectedEntity.Timestamp))
 	})
 
 	It("converts watched event from address 0x3A into LogTakeEntity struct", func() {
@@ -110,22 +140,30 @@ var _ = Describe("Log Take Converter", func() {
 		result, err := log_take.LogTakeConverter{}.ToEntity(watchedEvent)
 		Expect(err).NotTo(HaveOccurred())
 
-		Expect(common.ToHex(result.Id[:])).To(Equal("0x0000000000000000000000000000000000000000000000000000000000001761"))
-		p := hexutil.Encode(result.Pair[:])
-		Expect(p).To(Equal("0xc51ce3446dae6b90a7707b1c95f15be978a22a6cd998284bdc3a52a1387caed4"))
-		Expect(result.Maker.Hex()).To(Equal("0xab8D8b74F202f4cD4A918B65dA4bAc612e086Ee7"))
-		Expect(result.Pay_gem.Hex()).To(Equal("0xECF8F87f810EcF450940c9f60066b4a7a501d6A7"))
-		Expect(result.Buy_gem.Hex()).To(Equal("0x59aDCF176ED2f6788A41B8eA4c4904518e62B6A4"))
-		Expect(result.Taker.Hex()).To(Equal("0x0E4555922c52FFDdcfb006D3dBc94B21541F0F15"))
-		ta := new(big.Int)
-		ta.SetString("44636472558527032373", 10)
-		Expect(result.Take_amt).To(Equal(ta))
-		ga := new(big.Int)
-		ga.SetString("32718534385400314729409", 10)
-		Expect(result.Give_amt).To(Equal(ga))
-		Expect(result.Block).To(Equal(int64(4750060)))
+		expectedEntity := log_take.LogTakeEntity{
+			Id:        [32]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 23, 97},
+			Pair:      [32]byte{197, 28, 227, 68, 109, 174, 107, 144, 167, 112, 123, 28, 149, 241, 91, 233, 120, 162, 42, 108, 217, 152, 40, 75, 220, 58, 82, 161, 56, 124, 174, 212},
+			Maker:     common.Address{171, 141, 139, 116, 242, 2, 244, 205, 74, 145, 139, 101, 218, 75, 172, 97, 46, 8, 110, 231},
+			Pay_gem:   common.Address{236, 248, 248, 127, 129, 14, 207, 69, 9, 64, 201, 246, 0, 102, 180, 167, 165, 1, 214, 167},
+			Buy_gem:   common.Address{89, 173, 207, 23, 110, 210, 246, 120, 138, 65, 184, 234, 76, 73, 4, 81, 142, 98, 182, 164},
+			Taker:     common.Address{14, 69, 85, 146, 44, 82, 255, 221, 207, 176, 6, 211, 219, 201, 75, 33, 84, 31, 15, 21},
+			Take_amt:  helpers.BigFromString("44636472558527032373"),
+			Give_amt:  helpers.BigFromString("32718534385400314729409"),
+			Block:     4750060,
+			Tx:        "0x5a89f89609794bc59838ac53b319ef19df34bb2060eefa759e135c5af63ba132",
+			Timestamp: 1513537810,
+		}
+
+		Expect(result.Pair).To(Equal(expectedEntity.Pair))
+		Expect(result.Maker).To(Equal(expectedEntity.Maker))
+		Expect(result.Pay_gem).To(Equal(expectedEntity.Pay_gem))
+		Expect(result.Buy_gem).To(Equal(expectedEntity.Buy_gem))
+		Expect(result.Taker).To(Equal(expectedEntity.Taker))
+		Expect(result.Take_amt).To(Equal(expectedEntity.Take_amt))
+		Expect(result.Give_amt).To(Equal(expectedEntity.Give_amt))
+		Expect(result.Block).To(Equal(expectedEntity.Block))
 		Expect(result.Tx).To(Equal(watchedEvent.TxHash))
-		Expect(result.Timestamp).To(Equal(uint64(1513537810)))
+		Expect(result.Timestamp).To(Equal(expectedEntity.Timestamp))
 	})
 
 	It("converts watched event from address 0x14 into LogTakeEntity struct", func() {
@@ -144,57 +182,61 @@ var _ = Describe("Log Take Converter", func() {
 		}
 
 		result, err := log_take.LogTakeConverter{}.ToEntity(watchedEvent)
-
 		Expect(err).NotTo(HaveOccurred())
-		Expect(common.ToHex(result.Id[:])).To(Equal("0x0000000000000000000000000000000000000000000000000000000000006475"))
-		p := hexutil.Encode(result.Pair[:])
-		Expect(p).To(Equal("0x203e3b62e033f1548774797f9135c574dddd995f86e1c55fe1bab1610d35094f"))
-		Expect(result.Maker.Hex()).To(Equal("0x8142E5658a611821b3Aa32F177a1d975c60A92F4"))
-		Expect(result.Pay_gem.Hex()).To(Equal("0x9f8F72aA9304c8B593d555F12eF6589cC3A579A2"))
-		Expect(result.Buy_gem.Hex()).To(Equal("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"))
-		Expect(result.Taker.Hex()).To(Equal("0x0016BD4cb70Bd98CA07A341DA66450b5d22A55aa"))
-		ta := new(big.Int)
-		ta.SetString("171974281054840283", 10)
-		Expect(result.Take_amt).To(Equal(ta))
-		ga := new(big.Int)
-		ga.SetString("197770423213066325", 10)
-		Expect(result.Give_amt).To(Equal(ga))
-		Expect(result.Block).To(Equal(int64(5211385)))
+		expectedEntity := log_take.LogTakeEntity{
+			Id:        [32]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100, 117},
+			Pair:      [32]byte{32, 62, 59, 98, 224, 51, 241, 84, 135, 116, 121, 127, 145, 53, 197, 116, 221, 221, 153, 95, 134, 225, 197, 95, 225, 186, 177, 97, 13, 53, 9, 79},
+			Maker:     common.Address{129, 66, 229, 101, 138, 97, 24, 33, 179, 170, 50, 241, 119, 161, 217, 117, 198, 10, 146, 244},
+			Pay_gem:   common.Address{159, 143, 114, 170, 147, 4, 200, 181, 147, 213, 85, 241, 46, 246, 88, 156, 195, 165, 121, 162},
+			Buy_gem:   common.Address{192, 42, 170, 57, 178, 35, 254, 141, 10, 14, 92, 79, 39, 234, 217, 8, 60, 117, 108, 194},
+			Taker:     common.Address{0, 22, 189, 76, 183, 11, 217, 140, 160, 122, 52, 29, 166, 100, 80, 181, 210, 42, 85, 170},
+			Take_amt:  helpers.BigFromString("171974281054840283"),
+			Give_amt:  helpers.BigFromString("197770423213066325"),
+			Block:     5211385,
+			Tx:        "0x73c95b64c079f301d6e915441a1730c5c5a146e0c9a877c6aa431eea3603c4f5",
+			Timestamp: 1520407969,
+		}
+
+		Expect(result.Pair).To(Equal(expectedEntity.Pair))
+		Expect(result.Maker).To(Equal(expectedEntity.Maker))
+		Expect(result.Pay_gem).To(Equal(expectedEntity.Pay_gem))
+		Expect(result.Buy_gem).To(Equal(expectedEntity.Buy_gem))
+		Expect(result.Taker).To(Equal(expectedEntity.Taker))
+		Expect(result.Take_amt).To(Equal(expectedEntity.Take_amt))
+		Expect(result.Give_amt).To(Equal(expectedEntity.Give_amt))
+		Expect(result.Block).To(Equal(expectedEntity.Block))
 		Expect(result.Tx).To(Equal(watchedEvent.TxHash))
-		Expect(result.Timestamp).To(Equal(uint64(1520407969)))
+		Expect(result.Timestamp).To(Equal(expectedEntity.Timestamp))
 	})
 
 	It("converts a LogTakeEntity to a LogTakeModel", func() {
-		ga := new(big.Int)
-		ga.SetString("27055257200000000002", 10)
-		ta := new(big.Int)
-		ta.SetString("34334082741116751270", 10)
-		lt := log_take.LogTakeEntity{
+		entity := log_take.LogTakeEntity{
 			Id:        [32]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 192},
 			Pair:      [32]byte{61, 175, 114, 65, 111, 216, 142, 69, 107, 116, 90, 155, 119, 38, 78, 103, 101, 211, 73, 188, 158, 218, 55, 162, 185, 52, 124, 126, 18, 144, 39, 51},
 			Maker:     common.HexToAddress("0x00Ca405026e9018c29c26Cb081DcC9653428bFe9"),
 			Pay_gem:   common.HexToAddress("0xC66eA802717bFb9833400264Dd12c2bCeAa34a6d"),
 			Buy_gem:   common.HexToAddress("0xECF8F87f810EcF450940c9f60066b4a7a501d6A7"),
 			Taker:     common.HexToAddress("0x0092Ad2b9ae189D50F9cd8E7F4c3355C2c93e3fc"),
-			Take_amt:  ta,
-			Give_amt:  ga,
+			Take_amt:  helpers.BigFromString("34334082741116751270"),
+			Give_amt:  helpers.BigFromString("27055257200000000002"),
 			Block:     4000870,
 			Timestamp: uint64(1499649315),
+			Tx:        "0x73c95b64c079f301d6e915441a1730c5c5a146e0c9a877c6aa431eea3603c4f5",
 		}
 
 		ltc := log_take.LogTakeConverter{}
-		ltm := ltc.ToModel(lt)
+		model := ltc.ToModel(entity)
 
-		expectedPair := "0x3daf72416fd88e456b745a9b77264e6765d349bc9eda37a2b9347c7e12902733"
-		expectedID := int64(2496)
-		Expect(ltm.ID).To(Equal(expectedID))
-		Expect(ltm.Pair).To(Equal(expectedPair))
-		Expect(ltm.Guy).To(Equal("0x00ca405026e9018c29c26cb081dcc9653428bfe9"))
-		Expect(ltm.Lot).To(Equal(ga.String()))
-		Expect(ltm.Gem).To(Equal("0xc66ea802717bfb9833400264dd12c2bceaa34a6d"))
-		Expect(ltm.Pie).To(Equal("0xecf8f87f810ecf450940c9f60066b4a7a501d6a7"))
-		Expect(ltm.Bid).To(Equal(ta.String()))
-		Expect(ltm.Block).To(Equal(lt.Block))
-		Expect(ltm.Timestamp).To(Equal(time.Unix(int64(lt.Timestamp), 0)))
+		Expect(model.ID).To(Equal(expectedModel.ID))
+		Expect(model.Pair).To(Equal(expectedModel.Pair))
+		Expect(model.Guy).To(Equal(expectedModel.Guy))
+		Expect(model.Lot).To(Equal(expectedModel.Lot))
+		Expect(model.Gal).To(Equal(expectedModel.Gal))
+		Expect(model.Gem).To(Equal(expectedModel.Gem))
+		Expect(model.Pie).To(Equal(expectedModel.Pie))
+		Expect(model.Bid).To(Equal(expectedModel.Bid))
+		Expect(model.Block).To(Equal(expectedModel.Block))
+		Expect(model.Tx).To(Equal(expectedModel.Tx))
+		Expect(model.Timestamp).To(Equal(expectedModel.Timestamp))
 	})
 })

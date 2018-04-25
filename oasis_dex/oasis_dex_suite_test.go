@@ -1,4 +1,4 @@
-package log_make_test
+package oasis_dex_test
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestLogMake(t *testing.T) {
+func TestOasisDex(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "logmake suite")
+	RunSpecs(t, "OasisDex Suite")
 }

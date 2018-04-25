@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/8thlight/oasis_watcher/oasis_dex/constants"
-	"github.com/8thlight/oasis_watcher/oasis_dex/log_make"
 	"github.com/8thlight/oasis_watcher/oasis_dex/log_take"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -67,6 +66,20 @@ var otherLog = core.Log{
 
 var logs = []core.Log{logMake, logTake1, logTake2, otherLog}
 
+var expectedLogTake1Model = log_take.LogTakeModel{
+	ID:        39919,
+	Pair:      "0x204053929a0ef66ee09fa2295cc078531ee0339fa4d3e02ce9bb3f1a5d0116dd",
+	Guy:       "0x168910909606a2fca90d4c28fa39b50407b9c526",
+	Gem:       "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+	Lot:       "197508345201290208",
+	Gal:       "0x0016bd4cb70bd98ca07a341da66450b5d22a55aa",
+	Pie:       "0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2",
+	Bid:       "264661182569728879",
+	Block:     5430136,
+	Tx:        "0xaca917ef9440aaf2d37cd36309872ce8ab6251f56cac62524b6eb63d5c891be8",
+	Timestamp: time.Unix(1523578820, 0),
+}
+
 var _ = Describe("Integration test with vulcanizedb", func() {
 	var db *postgres.DB
 
@@ -92,14 +105,14 @@ var _ = Describe("Integration test with vulcanizedb", func() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	It("creates oasis.trade for each LogTake event received", func() {
+	It("creates oasis.log_take for each LogTake event received", func() {
 		blockchain := &fakes.Blockchain{}
 		transformer := log_take.NewTransformer(db, blockchain)
 
 		transformer.Execute()
 
 		var count int
-		err := db.QueryRow(`SELECT COUNT(*) FROM oasis.trade`).Scan(&count)
+		err := db.QueryRow(`SELECT COUNT(*) FROM oasis.log_take`).Scan(&count)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(count).To(Equal(2))
 
@@ -109,43 +122,20 @@ var _ = Describe("Integration test with vulcanizedb", func() {
 			log_take.LogTakeModel
 		}
 		var logTake dbRow
-		err = db.Get(&logTake, `SELECT * FROM oasis.trade WHERE block=$1`, logs[1].BlockNumber)
+		err = db.Get(&logTake, `SELECT * FROM oasis.log_take WHERE block=$1`, logs[1].BlockNumber)
+
 		Expect(err).ToNot(HaveOccurred())
-		Expect(logTake.ID).To(Equal(int64(39919)))
-		Expect(logTake.Pair).To(Equal("0x204053929a0ef66ee09fa2295cc078531ee0339fa4d3e02ce9bb3f1a5d0116dd"))
-		Expect(logTake.Guy).To(Equal("0x168910909606a2fca90d4c28fa39b50407b9c526"))
-		Expect(logTake.Gem).To(Equal("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"))
-		Expect(logTake.Lot).To(Equal("197508345201290208"))
-		Expect(logTake.Gal).To(Equal("0x0016bd4cb70bd98ca07a341da66450b5d22a55aa"))
-		Expect(logTake.Pie).To(Equal("0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2"))
-		Expect(logTake.Bid).To(Equal("264661182569728879"))
-		Expect(logTake.Timestamp.Equal(time.Unix(1523578820, 0))).To(BeTrue())
-	})
-
-	It("updates oasis.offer for each LogTake event received with a matching oasis.offer id", func() {
-		blockchain := &fakes.Blockchain{}
-		logMakeTransformer := log_make.NewTransformer(db, blockchain)
-		logMakeTransformer.Execute()
-
-		logTakeTransformer := log_take.NewTransformer(db, blockchain)
-		logTakeTransformer.Execute()
-
-		var count int
-		err := db.QueryRow(`SELECT COUNT(*) FROM oasis.trade`).Scan(&count)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(count).To(Equal(2))
-
-		type dbRow struct {
-			DBID           uint64 `db:"db_id"`
-			VulcanizeLogID int64  `db:"vulcanize_log_id"`
-			log_make.LogMakeModel
-		}
-		var logMake dbRow
-		err = db.Get(&logMake, `SELECT * FROM oasis.offer WHERE id=$1`, 39919)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(logMake.ID).To(Equal(int64(39919)))
-		Expect(logMake.Lot).To(Equal("197508345201290208"))
-		Expect(logMake.Bid).To(Equal("264661182569728879"))
+		Expect(logTake.ID).To(Equal(expectedLogTake1Model.ID))
+		Expect(logTake.Pair).To(Equal(expectedLogTake1Model.Pair))
+		Expect(logTake.Guy).To(Equal(expectedLogTake1Model.Guy))
+		Expect(logTake.Gem).To(Equal(expectedLogTake1Model.Gem))
+		Expect(logTake.Lot).To(Equal(expectedLogTake1Model.Lot))
+		Expect(logTake.Gal).To(Equal(expectedLogTake1Model.Gal))
+		Expect(logTake.Pie).To(Equal(expectedLogTake1Model.Pie))
+		Expect(logTake.Bid).To(Equal(expectedLogTake1Model.Bid))
+		Expect(logTake.Tx).To(Equal(expectedLogTake1Model.Tx))
+		Expect(logTake.Block).To(Equal(expectedLogTake1Model.Block))
+		Expect(logTake.Timestamp.Equal(expectedLogTake1Model.Timestamp)).To(BeTrue())
 	})
 
 })

@@ -69,10 +69,6 @@ func createLogTakeData(watchedEvent *core.WatchedEvent, logTakeTransformer *Tran
 		log.Println("Error persisting data for LogTake event: ", err)
 		return err
 	}
-	err = logTakeTransformer.LogMakeRepository.Update(lm.ID, lm.Lot, lm.Bid)
-	if err != nil {
-		log.Println("Error updating data for LogTake event: ", err)
-		return err
-	}
+
 	return nil
 }

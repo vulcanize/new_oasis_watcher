@@ -20,8 +20,19 @@ var _ = Describe("LogMake Repository", func() {
 	var db *postgres.DB
 	var repository log_make.Repository
 	var logRepository repositories.LogRepository
-	var logMakeEntity log_make.LogMakeEntity
 	var vulcanizeLogId int64
+
+	var logMakeEntity = log_make.LogMakeEntity{
+		Id:        [32]byte{1, 2, 3, 4},
+		Pair:      [32]byte{5, 6, 7, 8},
+		Maker:     common.HexToAddress("maker"),
+		Pay_gem:   common.HexToAddress("pay_gem"),
+		Buy_gem:   common.HexToAddress("buy_gem"),
+		Pay_amt:   big.NewInt(123),
+		Buy_amt:   big.NewInt(123),
+		Block:     int64(12345),
+		Timestamp: uint64(1),
+	}
 
 	BeforeEach(func() {
 		var err error
@@ -43,21 +54,11 @@ var _ = Describe("LogMake Repository", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		repository = log_make.Repository{DB: db}
-		logMakeEntity = log_make.LogMakeEntity{
-			Id:        [32]byte{1, 2, 3, 4},
-			Pair:      [32]byte{5, 6, 7, 8},
-			Maker:     common.HexToAddress("maker"),
-			Pay_gem:   common.HexToAddress("pay_gem"),
-			Buy_gem:   common.HexToAddress("buy_gem"),
-			Pay_amt:   big.NewInt(123),
-			Buy_amt:   big.NewInt(123),
-			Block:     int64(12345),
-			Timestamp: uint64(1),
-		}
 	})
 
 	AfterEach(func() {
 		repository.Exec(`DELETE FROM oasis.offer`)
+		repository.Exec(`DELETE FROM oasis.log_make`)
 	})
 
 	It("Creates a new LogMake record", func() {
@@ -72,7 +73,7 @@ var _ = Describe("LogMake Repository", func() {
 		}
 		dbResult := DBRow{}
 
-		err = repository.DB.QueryRowx(`SELECT * FROM oasis.offer`).StructScan(&dbResult)
+		err = repository.DB.QueryRowx(`SELECT * FROM oasis.log_make`).StructScan(&dbResult)
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(dbResult.VulcanizeLogID).To(Equal(vulcanizeLogId))
@@ -98,53 +99,23 @@ var _ = Describe("LogMake Repository", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		var count int
-		err = repository.DB.QueryRowx(`SELECT count(*) FROM oasis.offer`).Scan(&count)
+		err = repository.DB.QueryRowx(`SELECT count(*) FROM oasis.log_make`).Scan(&count)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(count).To(Equal(1))
 	})
 
-	It("updates an offer", func() {
-		var exists bool
-
-		lmc := log_make.LogMakeConverter{}
-		model := lmc.ToModel(logMakeEntity)
-		err := repository.Create(model, vulcanizeLogId)
+	It("removes a LogMake event when corresponding log is removed", func() {
+		ltc := log_make.LogMakeConverter{}
+		ltm := ltc.ToModel(logMakeEntity)
+		err := repository.Create(ltm, vulcanizeLogId)
 		Expect(err).ToNot(HaveOccurred())
 
-		err = repository.DB.QueryRow(`SELECT exists (SELECT * FROM oasis.offer WHERE vulcanize_log_id = $1)`, vulcanizeLogId).Scan(&exists)
+		var exists bool
+		err = repository.DB.QueryRowx(`SELECT exists (SELECT * FROM oasis.log_make where vulcanize_log_id = $1)`, vulcanizeLogId).Scan(&exists)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(exists).To(BeTrue())
 
-		type dbRow struct {
-			DBID           int `db:"db_id"`
-			VulcanizeLogID int `db:"vulcanize_log_id"`
-			log_make.LogMakeModel
-		}
-		result := &dbRow{}
-		err = repository.DB.Get(result, `SELECT * FROM oasis.offer`)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(result.Lot).To(Equal("123"))
-		Expect(result.Bid).To(Equal("123"))
-
-		repository.Update(result.ID, "10", "20")
-		expected := &dbRow{}
-		err = repository.DB.QueryRowx(`SELECT * FROM oasis.offer`).StructScan(expected)
-		Expect(expected.Lot).To(Equal("10"))
-		Expect(expected.Bid).To(Equal("20"))
-	})
-
-	It("Removes an LogMake record when the corresponding log is removed", func() {
-		var exists bool
-
-		lmc := log_make.LogMakeConverter{}
-		model := lmc.ToModel(logMakeEntity)
-		err := repository.Create(model, vulcanizeLogId)
-		Expect(err).ToNot(HaveOccurred())
-
-		err = repository.DB.QueryRow(`SELECT exists (SELECT * FROM oasis.offer WHERE vulcanize_log_id = $1)`, vulcanizeLogId).Scan(&exists)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(exists).To(BeTrue())
-
+		//log is removed b/c of reorg
 		var logCount int
 		_, err = logRepository.DB.Exec(`DELETE FROM logs WHERE id = $1`, vulcanizeLogId)
 		Expect(err).ToNot(HaveOccurred())
@@ -152,11 +123,10 @@ var _ = Describe("LogMake Repository", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(logCount).To(BeZero())
 
-		var logMakeCount int
+		var logTakeCount int
 		err = repository.DB.QueryRowx(
-			`SELECT count(*) FROM oasis.offer WHERE vulcanize_log_id = $1`, vulcanizeLogId).Scan(&logMakeCount)
+			`SELECT count(*) FROM oasis.log_take WHERE vulcanize_log_id = $1`, vulcanizeLogId).Scan(&logTakeCount)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(logMakeCount).To(BeZero())
+		Expect(logTakeCount).To(BeZero())
 	})
-
 })

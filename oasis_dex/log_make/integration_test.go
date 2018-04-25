@@ -40,6 +40,19 @@ var logs = []core.Log{
 	},
 }
 
+var expectedModel = log_make.LogMakeModel{
+	ID:        41617,
+	Pair:      "0x9dd48110dcc444fdc242510c09bbbbe21a5975cac061d82f7b843bce061ba391",
+	Guy:       "0x004075e4d4b1ce6c48c81cc940e2bad24b489e64",
+	Gem:       "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+	Lot:       "40000000000000000000",
+	Pie:       "0x89d24a6b4ccb1b6faa2625fe562bdd9a23260359",
+	Bid:       "20561563160000000000000",
+	Block:     5433832,
+	Timestamp: time.Unix(1523632681, 0),
+	Tx:        "0x5f2a91616d1ca67d0761360d33a5b1cf9d46612d165442d9c170307a1ab2e60c",
+}
+
 var _ = Describe("Integration test with VulcanizeDB", func() {
 	var db *postgres.DB
 
@@ -66,14 +79,14 @@ var _ = Describe("Integration test with VulcanizeDB", func() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	It("Creates an oasis.offer for each LogTake event received", func() {
+	It("Creates an oasis.log_make for each LogMake event received", func() {
 		blockchain := &fakes.Blockchain{}
 		transformer := log_make.NewTransformer(db, blockchain)
 
 		transformer.Execute()
 
 		var offerCount int
-		err := db.QueryRow(`SELECT COUNT(*) FROM oasis.offer where block = $1`, logs[0].BlockNumber).Scan(&offerCount)
+		err := db.QueryRow(`SELECT COUNT(*) FROM oasis.log_make where block = $1`, logs[0].BlockNumber).Scan(&offerCount)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(offerCount).To(Equal(1))
 
@@ -83,18 +96,18 @@ var _ = Describe("Integration test with VulcanizeDB", func() {
 			log_make.LogMakeModel
 		}
 		var offer dbRow
-		err = db.Get(&offer, `SELECT * from oasis.offer where block = $1`, logs[0].BlockNumber)
+		err = db.Get(&offer, `SELECT * from oasis.log_make where block = $1`, logs[0].BlockNumber)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(offer.ID).To(Equal(int64(41617)))
-		Expect(offer.Pair).To(Equal("0x9dd48110dcc444fdc242510c09bbbbe21a5975cac061d82f7b843bce061ba391"))
-		Expect(offer.Guy).To(Equal("0x004075e4d4b1ce6c48c81cc940e2bad24b489e64"))
-		Expect(offer.Gem).To(Equal("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"))
-		Expect(offer.Pie).To(Equal("0x89d24a6b4ccb1b6faa2625fe562bdd9a23260359"))
-		Expect(offer.Lot).To(Equal("40000000000000000000"))
-		Expect(offer.Bid).To(Equal("20561563160000000000000"))
-		Expect(offer.Block).To(Equal(int64(5433832)))
-		Expect(offer.Timestamp.Equal(time.Unix(1523632681, 0))).To(BeTrue())
-		Expect(offer.Tx).To(Equal("0x5f2a91616d1ca67d0761360d33a5b1cf9d46612d165442d9c170307a1ab2e60c"))
+		Expect(offer.ID).To(Equal(expectedModel.ID))
+		Expect(offer.Pair).To(Equal(expectedModel.Pair))
+		Expect(offer.Guy).To(Equal(expectedModel.Guy))
+		Expect(offer.Gem).To(Equal(expectedModel.Gem))
+		Expect(offer.Pie).To(Equal(expectedModel.Pie))
+		Expect(offer.Lot).To(Equal(expectedModel.Lot))
+		Expect(offer.Bid).To(Equal(expectedModel.Bid))
+		Expect(offer.Block).To(Equal(expectedModel.Block))
+		Expect(offer.Timestamp.Equal(expectedModel.Timestamp)).To(BeTrue())
+		Expect(offer.Tx).To(Equal(expectedModel.Tx))
 
 	})
 

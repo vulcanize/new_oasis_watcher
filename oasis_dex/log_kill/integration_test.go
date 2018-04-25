@@ -1,9 +1,10 @@
 package log_kill_test
 
 import (
+	"time"
+
 	"github.com/8thlight/oasis_watcher/oasis_dex/constants"
 	"github.com/8thlight/oasis_watcher/oasis_dex/log_kill"
-	"github.com/ethereum/go-ethereum/common"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/vulcanize/vulcanizedb/pkg/config"
@@ -13,23 +14,35 @@ import (
 	"github.com/vulcanize/vulcanizedb/pkg/fakes"
 )
 
-var idOne = "0x0000000000000000000000000000000000000000000000000000000000009eda"
+var idOne = "0x000000000000000000000000000000000000000000000000000000000000af21"
 var logKill = core.Log{
-	BlockNumber: 5428074,
+	BlockNumber: 5488076,
 	Address:     constants.ContractAddress,
-	TxHash:      "0x769de518d62d3ec4c4c5b50c51ca8248f27f4f5f833f349fc150adc4b2548cfd",
+	TxHash:      "0x135391a0962a63944e5908e6fedfff90fb4be3e3290a21017861099bad6546ae",
 	Index:       0,
 	Topics: [4]string{
 		constants.LogKillSignature,
 		idOne,
-		"0x204053929a0ef66ee09fa2295cc078531ee0339fa4d3e02ce9bb3f1a5d0116dd",
-		"0x0000000000000000000000009f87bda86354ba26d0e9250d006876d8b5216622",
+		"0x9dd48110dcc444fdc242510c09bbbbe21a5975cac061d82f7b843bce061ba391",
+		"0x0000000000000000000000003dc389e0a69d6364a66ab64ebd51234da9569284",
 	},
-	Data: "000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc20000000000000000000000009f8f72aa9304c8b593d555f12ef6589cc3a579a200000000000000000000000000000000000000000000000003782dace9d90000000000000000000000000000000000000000000000000000028d1286abf261e2000000000000000000000000000000000000000000000000000000005acf7f72",
+	Data: "0x000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc200000000000000000000000089d24a6b4ccb1b6faa2625fe562bdd9a23260359000000000000000000000000000000000000000000000000392d2e2bda9c00000000000000000000000000000000000000000000000000927f41fa0a4a418000000000000000000000000000000000000000000000000000000000005adcfebe",
+}
+
+var expectedLogKill = log_kill.LogKillModel{
+	ID:        44833,
+	Pair:      "0x9dd48110dcc444fdc242510c09bbbbe21a5975cac061d82f7b843bce061ba391",
+	Guy:       "0x3dc389e0a69d6364a66ab64ebd51234da9569284",
+	Gem:       "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+	Lot:       "4120000000000000000",
+	Pie:       "0x89d24a6b4ccb1b6faa2625fe562bdd9a23260359",
+	Bid:       "2702394520000000000000",
+	Block:     5488076,
+	Timestamp: time.Unix(1524432574, 0),
+	Tx:        "0x135391a0962a63944e5908e6fedfff90fb4be3e3290a21017861099bad6546ae",
 }
 
 //converted logID to assert against
-var otherLogId int64 = 40000
 var logs = []core.Log{
 	logKill,
 	{
@@ -61,18 +74,10 @@ var _ = Describe("Integration test with vulcanizedb", func() {
 		err = db.Select(&vulcanizeLogIds, `SELECT id FROM public.logs`)
 		Expect(err).ToNot(HaveOccurred())
 
-		//LogKill requires some offers be present
-		_, err = db.Exec(`INSERT INTO oasis.offer (id, time, vulcanize_log_id, block, tx) VALUES 
-			($1, now(), $2, 1, 1),
-			($3, now(), $4, 1, 1)`,
-			common.HexToHash(idOne).Big().Uint64(), vulcanizeLogIds[0],
-			otherLogId, vulcanizeLogIds[1],
-		)
-		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
-		_, err := db.Exec(`DELETE FROM oasis.offer`)
+		_, err := db.Exec(`DELETE FROM oasis.kill`)
 		Expect(err).ToNot(HaveOccurred())
 		_, err = db.Exec(`DELETE FROM log_filters`)
 		Expect(err).ToNot(HaveOccurred())
@@ -80,17 +85,35 @@ var _ = Describe("Integration test with vulcanizedb", func() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	It("Deletes oasis.offer with corresponding id for each LogKill event received", func() {
+	It("creates oasis.kill for each LogKill event received", func() {
 		blockchain := &fakes.Blockchain{}
 		transformer := log_kill.NewTransformer(db, blockchain)
 
 		transformer.Execute()
 
-		var id int64
-		err := db.QueryRow(`SELECT id FROM oasis.offer`).Scan(&id)
-
+		var count int
+		err := db.QueryRow(`SELECT COUNT(*) FROM oasis.kill`).Scan(&count)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(id).To(Equal(int64(otherLogId)))
+		Expect(count).To(Equal(1))
+
+		type dbRow struct {
+			DBID           uint64 `db:"db_id"`
+			VulcanizeLogID int64  `db:"vulcanize_log_id"`
+			log_kill.LogKillModel
+		}
+		var logKill dbRow
+		err = db.Get(&logKill, `SELECT * FROM oasis.kill WHERE block=$1`, logs[0].BlockNumber)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(logKill.ID).To(Equal(expectedLogKill.ID))
+		Expect(logKill.Pair).To(Equal(expectedLogKill.Pair))
+		Expect(logKill.Guy).To(Equal(expectedLogKill.Guy))
+		Expect(logKill.Gem).To(Equal(expectedLogKill.Gem))
+		Expect(logKill.Lot).To(Equal(expectedLogKill.Lot))
+		Expect(logKill.Pie).To(Equal(expectedLogKill.Pie))
+		Expect(logKill.Bid).To(Equal(expectedLogKill.Bid))
+		Expect(logKill.Block).To(Equal(expectedLogKill.Block))
+		Expect(logKill.Tx).To(Equal(expectedLogKill.Tx))
+		Expect(logKill.Timestamp.Equal(expectedLogKill.Timestamp)).To(BeTrue())
 	})
 
 })

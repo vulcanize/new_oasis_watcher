@@ -44,11 +44,12 @@ func (logKillTransformer Transformer) Execute() error {
 			return err
 		}
 		for _, we := range watchedEvents {
-			logKill, err := logKillTransformer.Converter.ToModel(*we)
+			entity, err := logKillTransformer.Converter.ToEntity(*we)
+			model := logKillTransformer.Converter.ToModel(*entity)
 			if err != nil {
 				log.Printf("Error persisting data for LogKill (watchedEvent.LogID %s):\n %s", we.LogID, err)
 			}
-			logKillTransformer.Repository.Remove(*logKill)
+			logKillTransformer.Repository.Create(model, we.LogID)
 		}
 	}
 	return nil

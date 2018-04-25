@@ -10,20 +10,31 @@ import (
 )
 
 type MockLogKillConverter struct {
-	watchedEvents []*core.WatchedEvent
+	watchedEvents     []*core.WatchedEvent
+	entitiesToConvert []log_kill.LogKillEntity
+	block             int64
 }
 
-func (mlkc *MockLogKillConverter) ToModel(watchedEvent core.WatchedEvent) (*log_kill.LogKillModel, error) {
+func (mlkc *MockLogKillConverter) ToModel(entity log_kill.LogKillEntity) log_kill.LogKillModel {
+	mlkc.entitiesToConvert = append(mlkc.entitiesToConvert, entity)
+	return log_kill.LogKillModel{}
+}
+
+func (mlkc *MockLogKillConverter) ToEntity(watchedEvent core.WatchedEvent) (*log_kill.LogKillEntity, error) {
 	mlkc.watchedEvents = append(mlkc.watchedEvents, &watchedEvent)
-	return &log_kill.LogKillModel{}, nil
+	e := &log_kill.LogKillEntity{Block: watchedEvent.BlockNumber}
+	mlkc.block++
+	return e, nil
 }
 
 var blockID1 = int64(5428074)
+var logID1 = int64(113)
 var blockID2 = int64(5428405)
+var logID2 = int64(100)
 
 var fakeWatchedEvents = []*core.WatchedEvent{
 	{
-		LogID:       113,
+		LogID:       logID1,
 		Name:        "LogKill",
 		BlockNumber: blockID1,
 		Address:     constants.ContractAddress,
@@ -36,7 +47,7 @@ var fakeWatchedEvents = []*core.WatchedEvent{
 		Data:        "000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc20000000000000000000000009f8f72aa9304c8b593d555f12ef6589cc3a579a200000000000000000000000000000000000000000000000003782dace9d90000000000000000000000000000000000000000000000000000028d1286abf261e2000000000000000000000000000000000000000000000000000000005acf7f72",
 	},
 	{
-		LogID:       100,
+		LogID:       logID2,
 		Name:        "LogKill",
 		BlockNumber: blockID2,
 		Address:     constants.ContractAddress,
@@ -51,41 +62,49 @@ var fakeWatchedEvents = []*core.WatchedEvent{
 }
 
 var _ = Describe("LogKill transformer", func() {
-	var logKillConverter MockLogKillConverter
+	var mockLogKillConverter MockLogKillConverter
 	var watchedEventsRepo mocks.MockWatchedEventsRepository
 	var logKillRepo mocks.MockLogKillRepo
 	var filterRepo mocks.MockFilterRepository
+	var transformer log_kill.Transformer
 
 	BeforeEach(func() {
-		logKillConverter = MockLogKillConverter{}
+		mockLogKillConverter = MockLogKillConverter{}
 		watchedEventsRepo = mocks.MockWatchedEventsRepository{}
 		watchedEventsRepo.SetWatchedEvents(fakeWatchedEvents)
 		logKillRepo = mocks.MockLogKillRepo{}
 		filterRepo = mocks.MockFilterRepository{}
-	})
-
-	It("Calls the watched events repo with correct filter", func() {
-		transformer := log_kill.Transformer{
-			Converter:              &logKillConverter,
+		transformer = log_kill.Transformer{
+			Converter:              &mockLogKillConverter,
 			WatchedEventRepository: &watchedEventsRepo,
 			FilterRepository:       filterRepo,
 			Repository:             &logKillRepo,
 		}
+	})
+
+	It("calls the watched events repo with correct filter", func() {
 		transformer.Execute()
 		Expect(len(watchedEventsRepo.Names)).To(Equal(1))
 		Expect(watchedEventsRepo.Names).To(ConsistOf("LogKill"))
 	})
 
-	It("Calls the LogKill converter with the watched event", func() {
-		transformer := log_kill.Transformer{
-			Converter:              &logKillConverter,
-			WatchedEventRepository: &watchedEventsRepo,
-			FilterRepository:       filterRepo,
-			Repository:             &logKillRepo,
-		}
+	It("calls the LogKill converter with the watched event", func() {
 		transformer.Execute()
-		Expect(len(logKillConverter.watchedEvents)).To(Equal(2))
-		Expect(logKillConverter.watchedEvents).To(ConsistOf(fakeWatchedEvents))
+		Expect(len(mockLogKillConverter.watchedEvents)).To(Equal(2))
+		Expect(mockLogKillConverter.watchedEvents).To(ConsistOf(fakeWatchedEvents))
+	})
+
+	It("converts a LogKill entity to a model", func() {
+		transformer.Execute()
+		Expect(len(mockLogKillConverter.entitiesToConvert)).To(Equal(2))
+		Expect(mockLogKillConverter.entitiesToConvert[0].Block).To(Equal(blockID1))
+		Expect(mockLogKillConverter.entitiesToConvert[1].Block).To(Equal(blockID2))
+	})
+
+	It("persists a oasis.kill for each log kill watched event", func() {
+		transformer.Execute()
+		Expect(len(logKillRepo.LogKills)).To(Equal(2))
+		Expect(logKillRepo.VulcanizeLogIDs).To(ConsistOf(logID1, logID2))
 	})
 
 })

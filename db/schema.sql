@@ -42,6 +42,127 @@ SET default_tablespace = '';
 SET default_with_oids = false;
 
 --
+-- Name: kill; Type: TABLE; Schema: oasis; Owner: -
+--
+
+CREATE TABLE kill (
+    db_id integer NOT NULL,
+    vulcanize_log_id integer NOT NULL,
+    id integer NOT NULL,
+    pair character varying(66),
+    gem character varying(66),
+    lot numeric,
+    pie character varying(66),
+    bid numeric,
+    guy character varying(66),
+    block integer NOT NULL,
+    "time" timestamp with time zone NOT NULL,
+    tx character varying(66) NOT NULL
+);
+
+
+--
+-- Name: kill_db_id_seq; Type: SEQUENCE; Schema: oasis; Owner: -
+--
+
+CREATE SEQUENCE kill_db_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: kill_db_id_seq; Type: SEQUENCE OWNED BY; Schema: oasis; Owner: -
+--
+
+ALTER SEQUENCE kill_db_id_seq OWNED BY kill.db_id;
+
+
+--
+-- Name: log_make; Type: TABLE; Schema: oasis; Owner: -
+--
+
+CREATE TABLE log_make (
+    db_id integer NOT NULL,
+    vulcanize_log_id integer NOT NULL,
+    id integer NOT NULL,
+    pair character varying(66),
+    gem character varying(66),
+    lot numeric,
+    pie character varying(66),
+    bid numeric,
+    guy character varying(66),
+    block integer NOT NULL,
+    "time" timestamp with time zone NOT NULL,
+    tx character varying(66) NOT NULL
+);
+
+
+--
+-- Name: log_make_db_id_seq; Type: SEQUENCE; Schema: oasis; Owner: -
+--
+
+CREATE SEQUENCE log_make_db_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: log_make_db_id_seq; Type: SEQUENCE OWNED BY; Schema: oasis; Owner: -
+--
+
+ALTER SEQUENCE log_make_db_id_seq OWNED BY log_make.db_id;
+
+
+--
+-- Name: log_take; Type: TABLE; Schema: oasis; Owner: -
+--
+
+CREATE TABLE log_take (
+    db_id integer NOT NULL,
+    vulcanize_log_id integer NOT NULL,
+    id integer NOT NULL,
+    pair character varying(66),
+    guy character varying(66),
+    gem character varying(66),
+    lot numeric,
+    gal character varying(66),
+    pie character varying(66),
+    bid numeric,
+    block integer NOT NULL,
+    "time" timestamp with time zone NOT NULL,
+    tx character varying(66) NOT NULL
+);
+
+
+--
+-- Name: log_take_db_id_seq; Type: SEQUENCE; Schema: oasis; Owner: -
+--
+
+CREATE SEQUENCE log_take_db_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: log_take_db_id_seq; Type: SEQUENCE OWNED BY; Schema: oasis; Owner: -
+--
+
+ALTER SEQUENCE log_take_db_id_seq OWNED BY log_take.db_id;
+
+
+--
 -- Name: offer; Type: TABLE; Schema: oasis; Owner: -
 --
 
@@ -79,6 +200,65 @@ CREATE SEQUENCE offer_db_id_seq
 --
 
 ALTER SEQUENCE offer_db_id_seq OWNED BY offer.db_id;
+
+
+--
+-- Name: state; Type: VIEW; Schema: oasis; Owner: -
+--
+
+CREATE VIEW state AS
+ WITH trade_state AS (
+         SELECT log_make.db_id,
+            log_make.vulcanize_log_id,
+            log_make.id,
+            log_make.pair,
+            log_make.gem,
+            log_make.lot,
+            NULL::character varying AS gal,
+            log_make.pie,
+            log_make.bid,
+            log_make.guy,
+            log_make.block,
+            log_make."time",
+            log_make.tx
+           FROM log_make
+        UNION ALL
+         SELECT log_take.db_id,
+            log_take.vulcanize_log_id,
+            log_take.id,
+            log_take.pair,
+            log_take.gem,
+            log_take.lot,
+            log_take.gal,
+            log_take.pie,
+            log_take.bid,
+            log_take.guy,
+            log_take.block,
+            log_take."time",
+            log_take.tx
+           FROM log_take
+  ORDER BY 3, 12
+        )
+ SELECT DISTINCT ON (ts.id) ts.db_id,
+    ts.vulcanize_log_id,
+    ts.id,
+    ts.pair,
+    ts.gem,
+    ts.lot,
+    ts.gal,
+    ts.pie,
+    ts.bid,
+    ts.guy,
+    ts.block,
+    ts."time",
+    ts.tx,
+        CASE
+            WHEN (tk.id IS NOT NULL) THEN true
+            ELSE false
+        END AS deleted
+   FROM (trade_state ts
+     LEFT JOIN kill tk ON ((ts.id = tk.id)))
+  ORDER BY ts.id, ts.block DESC, ts."time" DESC;
 
 
 --
@@ -432,6 +612,27 @@ CREATE VIEW watched_event_logs AS
 SET search_path = oasis, pg_catalog;
 
 --
+-- Name: kill db_id; Type: DEFAULT; Schema: oasis; Owner: -
+--
+
+ALTER TABLE ONLY kill ALTER COLUMN db_id SET DEFAULT nextval('kill_db_id_seq'::regclass);
+
+
+--
+-- Name: log_make db_id; Type: DEFAULT; Schema: oasis; Owner: -
+--
+
+ALTER TABLE ONLY log_make ALTER COLUMN db_id SET DEFAULT nextval('log_make_db_id_seq'::regclass);
+
+
+--
+-- Name: log_take db_id; Type: DEFAULT; Schema: oasis; Owner: -
+--
+
+ALTER TABLE ONLY log_take ALTER COLUMN db_id SET DEFAULT nextval('log_take_db_id_seq'::regclass);
+
+
+--
 -- Name: offer db_id; Type: DEFAULT; Schema: oasis; Owner: -
 --
 
@@ -497,6 +698,46 @@ ALTER TABLE ONLY watched_contracts ALTER COLUMN contract_id SET DEFAULT nextval(
 
 
 SET search_path = oasis, pg_catalog;
+
+--
+-- Name: kill kill_id_key; Type: CONSTRAINT; Schema: oasis; Owner: -
+--
+
+ALTER TABLE ONLY kill
+    ADD CONSTRAINT kill_id_key UNIQUE (id);
+
+
+--
+-- Name: kill kill_vulcanize_log_id_key; Type: CONSTRAINT; Schema: oasis; Owner: -
+--
+
+ALTER TABLE ONLY kill
+    ADD CONSTRAINT kill_vulcanize_log_id_key UNIQUE (vulcanize_log_id);
+
+
+--
+-- Name: log_make log_make_id_key; Type: CONSTRAINT; Schema: oasis; Owner: -
+--
+
+ALTER TABLE ONLY log_make
+    ADD CONSTRAINT log_make_id_key UNIQUE (id);
+
+
+--
+-- Name: log_make log_make_vulcanize_log_id_key; Type: CONSTRAINT; Schema: oasis; Owner: -
+--
+
+ALTER TABLE ONLY log_make
+    ADD CONSTRAINT log_make_vulcanize_log_id_key UNIQUE (vulcanize_log_id);
+
+
+--
+-- Name: log_take log_take_vulcanize_log_id_key; Type: CONSTRAINT; Schema: oasis; Owner: -
+--
+
+ALTER TABLE ONLY log_take
+    ADD CONSTRAINT log_take_vulcanize_log_id_key UNIQUE (vulcanize_log_id);
+
 
 --
 -- Name: offer offer_id_key; Type: CONSTRAINT; Schema: oasis; Owner: -
@@ -615,6 +856,69 @@ ALTER TABLE ONLY watched_contracts
 SET search_path = oasis, pg_catalog;
 
 --
+-- Name: kill_id_index; Type: INDEX; Schema: oasis; Owner: -
+--
+
+CREATE INDEX kill_id_index ON kill USING btree (id);
+
+
+--
+-- Name: log_make_guy_index; Type: INDEX; Schema: oasis; Owner: -
+--
+
+CREATE INDEX log_make_guy_index ON log_make USING btree (guy);
+
+
+--
+-- Name: log_make_pair_index; Type: INDEX; Schema: oasis; Owner: -
+--
+
+CREATE INDEX log_make_pair_index ON log_make USING btree (pair);
+
+
+--
+-- Name: log_take_gal_index; Type: INDEX; Schema: oasis; Owner: -
+--
+
+CREATE INDEX log_take_gal_index ON log_take USING btree (gal);
+
+
+--
+-- Name: log_take_gem_index; Type: INDEX; Schema: oasis; Owner: -
+--
+
+CREATE INDEX log_take_gem_index ON log_take USING btree (gem);
+
+
+--
+-- Name: log_take_guy_index; Type: INDEX; Schema: oasis; Owner: -
+--
+
+CREATE INDEX log_take_guy_index ON log_take USING btree (guy);
+
+
+--
+-- Name: log_take_id_index; Type: INDEX; Schema: oasis; Owner: -
+--
+
+CREATE INDEX log_take_id_index ON log_take USING btree (id);
+
+
+--
+-- Name: log_take_pair_index; Type: INDEX; Schema: oasis; Owner: -
+--
+
+CREATE INDEX log_take_pair_index ON log_take USING btree (pair);
+
+
+--
+-- Name: log_take_pie_index; Type: INDEX; Schema: oasis; Owner: -
+--
+
+CREATE INDEX log_take_pie_index ON log_take USING btree (pie);
+
+
+--
 -- Name: offer_guy_index; Type: INDEX; Schema: oasis; Owner: -
 --
 
@@ -729,6 +1033,30 @@ ALTER TABLE ONLY trade
 --
 
 ALTER TABLE ONLY offer
+    ADD CONSTRAINT log_index_fk FOREIGN KEY (vulcanize_log_id) REFERENCES public.logs(id) ON DELETE CASCADE;
+
+
+--
+-- Name: kill log_index_fk; Type: FK CONSTRAINT; Schema: oasis; Owner: -
+--
+
+ALTER TABLE ONLY kill
+    ADD CONSTRAINT log_index_fk FOREIGN KEY (vulcanize_log_id) REFERENCES public.logs(id) ON DELETE CASCADE;
+
+
+--
+-- Name: log_make log_index_fk; Type: FK CONSTRAINT; Schema: oasis; Owner: -
+--
+
+ALTER TABLE ONLY log_make
+    ADD CONSTRAINT log_index_fk FOREIGN KEY (vulcanize_log_id) REFERENCES public.logs(id) ON DELETE CASCADE;
+
+
+--
+-- Name: log_take log_index_fk; Type: FK CONSTRAINT; Schema: oasis; Owner: -
+--
+
+ALTER TABLE ONLY log_take
     ADD CONSTRAINT log_index_fk FOREIGN KEY (vulcanize_log_id) REFERENCES public.logs(id) ON DELETE CASCADE;
 
 

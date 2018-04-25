@@ -97,7 +97,7 @@ var _ = Describe("LogMake transformer", func() {
 		Expect(logMakeConverter.entitiesToConvert[1].Block).To(Equal(int64(1)))
 	})
 
-	It("persists an offer record for each LogMake event", func() {
+	It("persists a record for each LogMake event", func() {
 		Expect(len(repository.LogMakes)).To(Equal(2))
 		Expect(repository.VulcanizeLogIDs).To(ConsistOf(logID1, logID2))
 	})

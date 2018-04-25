@@ -105,14 +105,9 @@ var _ = Describe("LogTake transformer", func() {
 		Expect(mockLogTakeConverter.entitiesToConvert[1].Block).To(Equal(int64(1)))
 	})
 
-	It("persists a oasis.trade for each log take watched event", func() {
+	It("creates a LogTake record for each event", func() {
 		Expect(len(oasisLogRepo.LogTakes)).To(Equal(2))
 		Expect(oasisLogRepo.VulcanizeLogIDs).To(ConsistOf(logID1, logID2))
-	})
-
-	It("updates an oasis.offer for each watched event", func() {
-		Expect(len(logMakeRepo.OfferIds)).To(Equal(2))
-		Expect(logMakeRepo.OfferIds).To(ConsistOf(int64(0), int64(1)))
 	})
 
 })

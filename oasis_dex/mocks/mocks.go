@@ -28,12 +28,6 @@ func (mwer *MockWatchedEventsRepository) GetWatchedEvents(name string) ([]*core.
 type MockLogMakeRepo struct {
 	LogMakes        []log_make.LogMakeModel
 	VulcanizeLogIDs []int64
-	OfferIds        []int64
-}
-
-func (molr *MockLogMakeRepo) Update(offerId int64, lot string, bid string) error {
-	molr.OfferIds = append(molr.OfferIds, offerId)
-	return nil
 }
 
 func (molr *MockLogMakeRepo) Create(offerModel log_make.LogMakeModel, vulcanizeLogId int64) error {
@@ -43,11 +37,13 @@ func (molr *MockLogMakeRepo) Create(offerModel log_make.LogMakeModel, vulcanizeL
 }
 
 type MockLogKillRepo struct {
-	LogKills []log_kill.LogKillModel
+	LogKills        []log_kill.LogKillModel
+	VulcanizeLogIDs []int64
 }
 
-func (molr *MockLogKillRepo) Remove(logKill log_kill.LogKillModel) error {
-	molr.LogKills = append(molr.LogKills, logKill)
+func (molk *MockLogKillRepo) Create(model log_kill.LogKillModel, vulcanizeLogID int64) error {
+	molk.LogKills = append(molk.LogKills, model)
+	molk.VulcanizeLogIDs = append(molk.VulcanizeLogIDs, vulcanizeLogID)
 	return nil
 }
 
