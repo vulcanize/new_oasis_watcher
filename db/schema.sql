@@ -163,46 +163,6 @@ ALTER SEQUENCE log_take_db_id_seq OWNED BY log_take.db_id;
 
 
 --
--- Name: offer; Type: TABLE; Schema: oasis; Owner: -
---
-
-CREATE TABLE offer (
-    db_id integer NOT NULL,
-    vulcanize_log_id integer NOT NULL,
-    id integer NOT NULL,
-    pair character varying(66),
-    gem character varying(66),
-    lot numeric,
-    pie character varying(66),
-    bid numeric,
-    guy character varying(66),
-    block integer NOT NULL,
-    "time" timestamp with time zone NOT NULL,
-    tx character varying(66) NOT NULL
-);
-
-
---
--- Name: offer_db_id_seq; Type: SEQUENCE; Schema: oasis; Owner: -
---
-
-CREATE SEQUENCE offer_db_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: offer_db_id_seq; Type: SEQUENCE OWNED BY; Schema: oasis; Owner: -
---
-
-ALTER SEQUENCE offer_db_id_seq OWNED BY offer.db_id;
-
-
---
 -- Name: state; Type: VIEW; Schema: oasis; Owner: -
 --
 
@@ -259,47 +219,6 @@ CREATE VIEW state AS
    FROM (trade_state ts
      LEFT JOIN kill tk ON ((ts.id = tk.id)))
   ORDER BY ts.id, ts.block DESC, ts."time" DESC;
-
-
---
--- Name: trade; Type: TABLE; Schema: oasis; Owner: -
---
-
-CREATE TABLE trade (
-    db_id integer NOT NULL,
-    vulcanize_log_id integer NOT NULL,
-    id integer NOT NULL,
-    pair character varying(66),
-    guy character varying(66),
-    gem character varying(66),
-    lot numeric,
-    gal character varying(66),
-    pie character varying(66),
-    bid numeric,
-    block integer NOT NULL,
-    "time" timestamp with time zone NOT NULL,
-    tx character varying(66) NOT NULL
-);
-
-
---
--- Name: trade_db_id_seq; Type: SEQUENCE; Schema: oasis; Owner: -
---
-
-CREATE SEQUENCE trade_db_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: trade_db_id_seq; Type: SEQUENCE OWNED BY; Schema: oasis; Owner: -
---
-
-ALTER SEQUENCE trade_db_id_seq OWNED BY trade.db_id;
 
 
 SET search_path = public, pg_catalog;
@@ -632,20 +551,6 @@ ALTER TABLE ONLY log_make ALTER COLUMN db_id SET DEFAULT nextval('log_make_db_id
 ALTER TABLE ONLY log_take ALTER COLUMN db_id SET DEFAULT nextval('log_take_db_id_seq'::regclass);
 
 
---
--- Name: offer db_id; Type: DEFAULT; Schema: oasis; Owner: -
---
-
-ALTER TABLE ONLY offer ALTER COLUMN db_id SET DEFAULT nextval('offer_db_id_seq'::regclass);
-
-
---
--- Name: trade db_id; Type: DEFAULT; Schema: oasis; Owner: -
---
-
-ALTER TABLE ONLY trade ALTER COLUMN db_id SET DEFAULT nextval('trade_db_id_seq'::regclass);
-
-
 SET search_path = public, pg_catalog;
 
 --
@@ -737,30 +642,6 @@ ALTER TABLE ONLY log_make
 
 ALTER TABLE ONLY log_take
     ADD CONSTRAINT log_take_vulcanize_log_id_key UNIQUE (vulcanize_log_id);
-
-
---
--- Name: offer offer_id_key; Type: CONSTRAINT; Schema: oasis; Owner: -
---
-
-ALTER TABLE ONLY offer
-    ADD CONSTRAINT offer_id_key UNIQUE (id);
-
-
---
--- Name: offer offer_vulcanize_log_id_key; Type: CONSTRAINT; Schema: oasis; Owner: -
---
-
-ALTER TABLE ONLY offer
-    ADD CONSTRAINT offer_vulcanize_log_id_key UNIQUE (vulcanize_log_id);
-
-
---
--- Name: trade trade_vulcanize_log_id_key; Type: CONSTRAINT; Schema: oasis; Owner: -
---
-
-ALTER TABLE ONLY trade
-    ADD CONSTRAINT trade_vulcanize_log_id_key UNIQUE (vulcanize_log_id);
 
 
 SET search_path = public, pg_catalog;
@@ -918,62 +799,6 @@ CREATE INDEX log_take_pair_index ON log_take USING btree (pair);
 CREATE INDEX log_take_pie_index ON log_take USING btree (pie);
 
 
---
--- Name: offer_guy_index; Type: INDEX; Schema: oasis; Owner: -
---
-
-CREATE INDEX offer_guy_index ON offer USING btree (guy);
-
-
---
--- Name: offer_pair_index; Type: INDEX; Schema: oasis; Owner: -
---
-
-CREATE INDEX offer_pair_index ON offer USING btree (pair);
-
-
---
--- Name: trade_gal_index; Type: INDEX; Schema: oasis; Owner: -
---
-
-CREATE INDEX trade_gal_index ON trade USING btree (gal);
-
-
---
--- Name: trade_gem_index; Type: INDEX; Schema: oasis; Owner: -
---
-
-CREATE INDEX trade_gem_index ON trade USING btree (gem);
-
-
---
--- Name: trade_guy_index; Type: INDEX; Schema: oasis; Owner: -
---
-
-CREATE INDEX trade_guy_index ON trade USING btree (guy);
-
-
---
--- Name: trade_id_index; Type: INDEX; Schema: oasis; Owner: -
---
-
-CREATE INDEX trade_id_index ON trade USING btree (id);
-
-
---
--- Name: trade_pair_index; Type: INDEX; Schema: oasis; Owner: -
---
-
-CREATE INDEX trade_pair_index ON trade USING btree (pair);
-
-
---
--- Name: trade_pie_index; Type: INDEX; Schema: oasis; Owner: -
---
-
-CREATE INDEX trade_pie_index ON trade USING btree (pie);
-
-
 SET search_path = public, pg_catalog;
 
 --
@@ -1019,22 +844,6 @@ CREATE INDEX tx_to_index ON transactions USING btree (tx_to);
 
 
 SET search_path = oasis, pg_catalog;
-
---
--- Name: trade log_index_fk; Type: FK CONSTRAINT; Schema: oasis; Owner: -
---
-
-ALTER TABLE ONLY trade
-    ADD CONSTRAINT log_index_fk FOREIGN KEY (vulcanize_log_id) REFERENCES public.logs(id) ON DELETE CASCADE;
-
-
---
--- Name: offer log_index_fk; Type: FK CONSTRAINT; Schema: oasis; Owner: -
---
-
-ALTER TABLE ONLY offer
-    ADD CONSTRAINT log_index_fk FOREIGN KEY (vulcanize_log_id) REFERENCES public.logs(id) ON DELETE CASCADE;
-
 
 --
 -- Name: kill log_index_fk; Type: FK CONSTRAINT; Schema: oasis; Owner: -

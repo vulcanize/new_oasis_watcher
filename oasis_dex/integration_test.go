@@ -113,11 +113,7 @@ var _ = Describe("oasis.state represents current state of offer", func() {
 	})
 
 	AfterEach(func() {
-		_, err := db.Exec(`DELETE FROM oasis.offer`)
-		Expect(err).ToNot(HaveOccurred())
-		_, err = db.Exec(`DELETE FROM oasis.trade`)
-		Expect(err).ToNot(HaveOccurred())
-		_, err = db.Exec(`DELETE FROM oasis.kill`)
+		_, err := db.Exec(`DELETE FROM oasis.kill`)
 		Expect(err).ToNot(HaveOccurred())
 		_, err = db.Exec(`DELETE FROM log_filters`)
 		Expect(err).ToNot(HaveOccurred())

@@ -97,9 +97,7 @@ var _ = Describe("Integration test with vulcanizedb", func() {
 	})
 
 	AfterEach(func() {
-		_, err := db.Exec(`DELETE FROM oasis.trade`)
-		Expect(err).ToNot(HaveOccurred())
-		_, err = db.Exec(`DELETE FROM log_filters`)
+		_, err := db.Exec(`DELETE FROM log_filters`)
 		Expect(err).ToNot(HaveOccurred())
 		_, err = db.Exec(`DELETE FROM logs`)
 		Expect(err).ToNot(HaveOccurred())

@@ -29,4 +29,3 @@ CREATE INDEX log_take_guy_index
   ON oasis.log_take (guy);
 CREATE INDEX log_take_gal_index
   ON oasis.log_take (gal);
-COMMIT;

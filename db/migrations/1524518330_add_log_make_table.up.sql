@@ -1,6 +1,3 @@
-BEGIN;
-CREATE SCHEMA IF NOT EXISTS oasis;
-
 CREATE TABLE oasis.log_make (
   db_id            SERIAL,
   vulcanize_log_id INTEGER NOT NULL UNIQUE,
@@ -23,4 +20,3 @@ CREATE INDEX log_make_pair_index
   ON oasis.log_make (pair);
 CREATE INDEX log_make_guy_index
   ON oasis.log_make (guy);
-COMMIT;
